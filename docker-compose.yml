@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # EHockey League Site
+  eashl-site:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      - NEXT_PUBLIC_BRAND_LOGO_URL=${NEXT_PUBLIC_BRAND_LOGO_URL:-/logo.png}
+      - NEXT_PUBLIC_BRAND_PRIMARY_COLOR=${NEXT_PUBLIC_BRAND_PRIMARY_COLOR:-#1e40af}
+      - NEXT_PUBLIC_BRAND_SECONDARY_COLOR=${NEXT_PUBLIC_BRAND_SECONDARY_COLOR:-#3b82f6}
+      - NEXT_PUBLIC_BRAND_ACCENT_COLOR=${NEXT_PUBLIC_BRAND_ACCENT_COLOR:-#f59e0b}
+    depends_on:
+      - supabase
+    restart: unless-stopped
+    networks:
+      - eashl-network
+
+  # Supabase (for local development)
+  supabase:
+    image: supabase/postgres:15.1.0.117
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=your-super-secret-and-long-postgres-password
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+    volumes:
+      - supabase_data:/var/lib/postgresql/data
+      - ./supabase/init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      - eashl-network
+
+  # Supabase Studio (optional, for database management)
+  supabase-studio:
+    image: supabase/studio:20240115-0c7c9d1
+    ports:
+      - "3001:3000"
+    environment:
+      - STUDIO_PG_META_URL=http://supabase:8080
+      - POSTGRES_PASSWORD=your-super-secret-and-long-postgres-password
+      - DEFAULT_ORGANIZATION_NAME=EHockey League
+      - DEFAULT_PROJECT_NAME=Local Development
+    depends_on:
+      - supabase
+    restart: unless-stopped
+    networks:
+      - eashl-network
+
+  # Redis (for caching and sessions)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - eashl-network
+
+  # Nginx (reverse proxy for production)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./public:/usr/share/nginx/html:ro
+    depends_on:
+      - eashl-site
+    restart: unless-stopped
+    networks:
+      - eashl-network
+    profiles:
+      - production
+
+volumes:
+  supabase_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  eashl-network:
+    driver: bridge
