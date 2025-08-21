@@ -28,3 +28,14 @@ export const signInSchema = z.object({
 
 export type SignUpFormData = z.infer<typeof signUpSchema>
 export type SignInFormData = z.infer<typeof signInSchema>
+
+// Legacy exports for backward compatibility
+export const loginSchema = signInSchema
+export const registerSchema = signUpSchema
+export const resetPasswordSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+})
+
+export type LoginFormData = SignInFormData
+export type RegisterFormData = SignUpFormData
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>

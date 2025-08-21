@@ -1,8 +1,7 @@
 import { League } from "@/types/league";
-import { LeagueButton } from "@/components/leagueButton";
 import { useState, useEffect } from "react";
 
-export function getMyLeagues(){
+export function useMyLeagues(){
     const [leagues, setLeagues] = useState<League[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -27,7 +26,8 @@ export function getMyLeagues(){
         },[]);
     return { leagues, isLoading, error };
 }
-export function getLeagues(){
+
+export function useLeagues(){
     const [leagues, setLeagues] = useState<League[] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -52,3 +52,7 @@ export function getLeagues(){
         },[]);
     return { leagues, isLoading, error };
 }
+
+// Legacy exports for backward compatibility
+export const getMyLeagues = useMyLeagues;
+export const getLeagues = useLeagues;
